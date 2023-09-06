@@ -1,0 +1,97 @@
+\documentclass[a4paper, 12pt,h]{article}
+\usepackage[IL2]{fontenc}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[a4paper, total={17cm, 24cm}, top=3cm, left=2cm]{geometry}
+\usepackage[czech]{babel}
+\usepackage{floatrow}
+\setcounter{tocdepth}{5}
+\usepackage{hyperref}
+\usepackage[table,xcdraw]{xcolor}
+\linespread{1.2}
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        \textsc{\Huge{Vysoké učené technické v Brně\\[0.3em]}}
+        \textsc{\huge{Fakulta informačních technologií}}    
+        \vspace{\stretch{0.382}}      
+        
+        \textsc{\Huge{Mikroprocesorové a vestavěné systémy\\[0.3em]}}
+        
+        \textbf{\textsc{\LARGE{ESP32: Měření srdečního tepu [digitální senzor]}}}        
+        \vspace{\stretch{0.618}}
+    \end{center}
+    {   
+        \Large \textbf{Ivan Tsiareshkin, xtsiar00} \quad \quad \quad \quad \quad \quad \quad \quad \quad \today 
+    }
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+
+\section{Úvod}
+Cílem projektu byl návrh a implementace vestavné aplikace, která měří srdeční tep a výsledek zobrazí na displej. Byla využitá deska WeMos D1 R32\footnote{\href{https://www.fit.vutbr.cz/~simekv/IMP\_projekt\_board\_ESP32\_Wemos\_D1\_R32.pdf}{https://www.fit.vutbr.cz/simekv/IMP\_projekt\_board\_ESP32\_Wemos\_D1\_R32.pdf}}, která obsahuje čip ESP32, modul pro měření srdečního tepu MAX30102\footnote{\href{https://www.hwkitchen.cz/max30102-snimac-pro-srdecni-tep-a-pulzni-oxymetr/}{https://www.hwkitchen.cz/max30102-snimac-pro-srdecni-tep-a-pulzni-oxymetr/}} a grafický OLED displej\footnote{\href{https://www.hadex.cz/m508a-displej-oled-096-128x64-znaku-7pinu-bily/}{https://www.hadex.cz/m508a-displej-oled-096-128x64-znaku-7pinu-bily/}}.
+
+\subsection{OLED displej}
+Grafický displej OLED 0,96" má rozlišení displeje 128x64 bodů a 7 pinů. Tato verze displeje komunikuje na rozhraní SPI. Pracovní napětí je 3.3 nebo 5V.
+
+\subsection{Senzor MAX30102}
+Senzor MAX30102 dokáže měřit srdeční tep i okysličení krve. Měření probíhá neinvazivně optickou metodou. Komunikace probíhá na rozhraní I2C. Podrobné informace o tom, jak senzor funguje, jsou \href{https://www.hwkitchen.cz/max30102-snimac-pro-srdecni-tep-a-pulzni-oxymetr/}{zde}.
+
+\subsection{Zapojení}
+Nejprve bylo VCC(3.3V) a GND z desky Wemos napojeno na "breadboard bus strips" (+ a -). Piny SCL a SDA byly použity pro I2C komunikaci mezi senzorem MAX30102 a deskou Wemos D1 R32. OLED displej komunikuje s deskou na rozhraní SPI a proto byly použity odpovídající piny. Konkrétní zapojení je vidět na \href{https://drive.google.com/drive/u/1/folders/1VMrUQWalsoRiYowo8jg8U5sH7tqxdGtw}{videu}.
+
+\begin{table}[ht]
+    \begin{tabular}{p{2.7cm} p{2.3cm} p{2.3cm}}
+        \hline
+        Periferní pin & ESP32 pin & Název v kódu\\ \hline
+        Senzor VCC     & 3V3  & -- \\
+        Senzor GND     & GND  & -- \\
+        Senzor SCL     & SCL(IO22) & -- \\
+        Senzor SDA     & SDA(IO21) & -- \\
+        OLED VCC       & 3V3  & -- \\
+        OLED GND       & GND  & -- \\
+        OLED D0        & IO18 & OLED\_CLK  \\
+        OLED D1        & IO23 & OLED\_MOSI \\ 
+        OLED RES       & IO17 & OLED\_RESET\\ 
+        OLED DC        & IO16 & OLED\_DC   \\ 
+        OLED CS        & IO5 & OLED\_CS    \\ 
+    \end{tabular}
+    \caption{Hardwarové zapojení}
+\end{table}
+
+\newpage
+
+\section{Řešení}
+Řešení je implementováno v jazyce C v prostředí Arduino IDE s využitím knihoven pro MAX30102\footnote{\href{https://github.com/sparkfun/SparkFun\_MAX3010x\_Sensor\_Library}{https://github.com/sparkfun/SparkFun\_MAX3010x\_Sensor\_Library}} a OLED displej\footnote{\href{https://github.com/lexus2k/ssd1306}{https://github.com/lexus2k/ssd1306}}\footnote{\href{https://github.com/adafruit/Adafruit-GFX-Library}{https://github.com/adafruit/Adafruit-GFX-Library}}.
+
+\subsection{Instalace a spuštění}
+Projekt vyžaduje ke spuštění Arduino IDE\footnote{\href{
+https://www.arduino.cc/en/software}{
+https://www.arduino.cc/en/software}} verze 1.8.19 nebo vyšší. Pak je nutné přidat desku esp32 prostřednictvím Board Manageru a nastavit položku Board na ESP32 Dev Module. Dále je potřeba nainstalovat knihovny v Tools-Manage Libraries :
+\begin{enumerate}
+    \item SparkFun MAX3010x Pulse and Proximity Sensor Library: pro senzor měření tepu.
+    \item Adafruit GFX Library (a potřebné komponenty): graphics core knihovna pro OLED displej
+    \item Adafruit SSD1306: driver knihovna pro OLED displej
+\end{enumerate}
+Po nastavení Upload Speed na hodnotu 115200 a Portu projekt je možné spustit. Pokud se po kompilaci a nahrání projektu na desku rozsvítí u senzoru červená LED a na OLED displeji je napsáno přiložit prst na senzor, program běží a nainstaloval se správně.
+
+\subsection{Programová část aplikace}
+\begin{itemize}
+    \item Na začátku kódu jsou připojeny potřebné knihovny, jsou nastaveny velikosti displeje a hodnoty jeho pinů. Rovněž jsou vytvořeny 2 bitmapové obrázky srdce, z nichž jeden je větší, při čtení dat budou tyto obrázky střídavě zobrazovat na obrazovce, napodobující srdeční tep. Pro výpočet hodnot srdečného tepu jsou také vytvořeny globální proměnné.
+    \item Funkce setup() inicializuje senzor a displej a v případě selhání vypíše chybu. Displej se vymaže a senzor se rozsvítí červeným LEDem, což znamená, že senzor běží.
+    \item Funkce loop() obsahuje programový kód, který bude opakovaně prováděn v nekonečné smyčce. Konkrétně následující: senzor načte hodnotu IR a na základě ní program rozhodne, zda je prst na senzor přiložen. Pokud ano, na displeji se zobrazí malý symbol srdce a průměrná hodnota srdečního tepu. Dále po detekci jednoho srdečního tepu program vypočítá průměrnou hodnotu srdečního tepu za minutu(BPM) z rychlosti posledních 4 tepů a zobrazí tuto hodnotu na OLED displeji spolu s velkým symbolem srdce. Pokud je hodnota IR malá, zobrazí se na OLED displeji žádost o přiložení prstu na senzor.
+\end{itemize}
+
+\newpage
+\section{Shrnutí}
+Při psaní tohoto projektu byly implementovány všechny požadavky uvedené v zadání. Autoevaluace složek E, F, Q, P, D je 14. \\ 
+Při testování implementace byly výsledky měření porovnány s výsledky měření chytrých hodinek Apple Watch a výsledky lišily jenom nepatrně.
+
+\section{Příloha}
+Video: \href{https://drive.google.com/drive/u/1/folders/1VMrUQWalsoRiYowo8jg8U5sH7tqxdGtw}{https://drive.google.com/drive/u/1/folders/1VMrUQWalsoRiYowo8jg8U5sH7tqxdGtw}
+
+\end{document}
